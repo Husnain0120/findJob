@@ -22,9 +22,9 @@ const uploadCloudinary = async (localPath) => {
         }
 
         // Upload the file to Cloudinary
-        const response = await cloudinary.uploader.upload(localPath, {
-            resource_type: "auto"
-        });
+        const response = await cloudinary.uploader.upload(
+            resume.tempfilePath
+        );
 
         // File uploaded successfully
         console.log(`File uploaded successfully to Cloudinary: ${response.url}`);

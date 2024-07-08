@@ -24,7 +24,7 @@ app.use(cookieParser())
 
 app.use(fileUpload({
     useTempFiles:true,
-    tempFileDir:'./public/temp',
+    tempFileDir:'/tmp/',
 }))
 
 
