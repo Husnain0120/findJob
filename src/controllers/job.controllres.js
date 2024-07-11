@@ -1,6 +1,5 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { apiError } from '../utils/apiError.js';
-import { apiResponse } from "../utils/ApiResponse.js"
 import { Job } from '../model/jobs.model.js';
 
 // Get all jobs
@@ -14,28 +13,27 @@ const getAllJob = asyncHandler(async (req, res, next) => {
 
 // Create job
 const postJob = asyncHandler(async (req, res, next) => {
-    const { role } = req.user; // Get the role of the user from the request
+    const { role } = req.user;
 
     if (role === "Job Seeker") {
-        throw new apiError(400, "Job seeker is not allowed to create jobs"); // Prevent job seekers from creating jobs
+        return next(new apiError(400, "Job seeker is not allowed to create jobs"));
     }
 
     const { title, description, category, country, city, location, fixedSalary, salaryFrom, salaryTo } = req.body;
 
-    // Ensure all required job details are provided
     if (!title || !description || !category || !country || !city || !location) {
-        throw new apiError(400, "Please provide full job details");
+        return next(new apiError(400, "Please provide full job details"));
     }
-    // Ensure either fixed salary or a salary range is provided
+    
     if ((!salaryFrom || !salaryTo) && !fixedSalary) {
-        throw new apiError(400, "Please either provide a fixed salary or a ranged salary");
+        return next(new apiError(400, "Please either provide a fixed salary or a ranged salary"));
     }
-    // Prevent providing both fixed salary and salary range
+    
     if (salaryFrom && salaryTo && fixedSalary) {
-        throw new apiError(400, "Cannot enter both fixed salary and ranged salary");
+        return next(new apiError(400, "Cannot enter both fixed salary and ranged salary"));
     }
 
-    const jobPostedBy = req.user._id; // Set the user ID as the job poster
+    const jobPostedBy = req.user._id;
     const job = await Job.create({
         title,
         description,
@@ -51,72 +49,94 @@ const postJob = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({
         success: true,
-        message: "Job posted successfully", // Success message for job creation
+        message: "Job posted successfully",
         job,
     });
 });
 
 // Get jobs posted by the logged-in user
 const getMyJobs = asyncHandler(async (req, res, next) => {
-    const { role } = req.user; // Get the role of the user from the request
+    const { role } = req.user;
 
     if (role === "Job Seeker") {
-        throw new apiError(400, "Job seeker is not allowed to create jobs"); // Prevent job seekers from accessing their jobs
+        return next(new apiError(400, "Job seeker is not allowed to create jobs"));
     }
 
-    const myJobs = await Job.find({ jobPostedBy: req.user._id }); // Find jobs posted by the logged-in user
+    const myJobs = await Job.find({ jobPostedBy: req.user._id });
 
     res.status(200).json({
         success: true,
         myJobs,
     });
 });
- 
-   const updateJob = asyncHandler(async(req,res,next)=>{
-        const { role } = req.user; // Get the role of the user from the request
 
-        if (role === "Job Seeker") {
-            throw new apiError(400, "Job seeker is not allowed to create jobs"); // Prevent job seekers from accessing their jobs
+// Update job
+const updateJob = asyncHandler(async (req, res, next) => {
+    const { role } = req.user;
+
+    if (role === "Job Seeker") {
+        return next(new apiError(400, "Job seeker is not allowed to update jobs"));
+    }
+
+    const { id } = req.params;
+    let job = await Job.findById(id);
+
+    if (!job) {
+        return next(new apiError(404, "Job not found"));
+    }
+
+    job = await Job.findByIdAndUpdate(id, req.body, {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false,
+    });
+
+    res.status(200).json({
+        success: true,
+        job,
+        message: "Job updated successfully"
+    });
+});
+
+// Delete job
+const deleteJob = asyncHandler(async (req, res, next) => {
+    const { role } = req.user;
+
+    if (role === "Job Seeker") {
+        return next(new apiError(400, "Job seeker is not allowed to delete jobs"));
+    }
+
+    const { id } = req.params;
+    let job = await Job.findById(id);
+
+    if (!job) {
+        return next(new apiError(404, "Job not found"));
+    }
+
+    await Job.deleteOne({ _id: id });
+
+    res.status(200).json({
+        success: true,
+        message: "Job deleted successfully",
+    });
+});
+
+// Get single job
+const getSingleJob = asyncHandler(async (req, res, next) => {
+    const { id } = req.params;
+
+    try {
+        const job = await Job.findById(id);
+        if (!job) {
+            return next(new apiError(404, "Job not found"));
         }
-         const {id} = req.params;
-         let job = await Job.findById(id);
+        res.status(200).json({
+            success: true,
+            job
+        });
+    } catch (error) {
+        return next(new apiError(400, "Invalid ID/Cast Error"));
+    }
+});
 
-         if (!job) {
-            throw new apiError(400,"OOps, job not found! ")
-         };
-
-         job = await Job.findByIdAndUpdate(id, req.body,{
-            new:true,
-            runValidators:true,
-            useFindAndModify:true,
-         })
-         res.status(200).json({
-            success:true,
-            job,
-            message:"job Updated successfully"
-         });
-    })
-
-    // delet jobs
-    const deleteJob = asyncHandler(async(req,res,next)=>{
-        const { role } = req.user; // Get the role of the user from the request
-
-        if (role === "Job Seeker") {
-            throw new apiError(400, "Job seeker is not allowed to create jobs"); // Prevent job seekers from accessing their jobs
-        }
-         const {id} = req.params;
-         let job = await Job.findById(id);
-
-         if (!job) {
-            throw new apiError(400,"OOps, job not found! ")
-         };
-
-         await Job.deleteOne();
-         res.status(200).json({
-            success:true,
-            message:"job delete successfully",
-         })
-    })
-
-
-export { getAllJob, postJob, getMyJobs, updateJob ,deleteJob }; // Export the controller functions
+export { getAllJob, postJob, getMyJobs, getSingleJob, updateJob, deleteJob };

@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { deleteJob, getAllJob, getMyJobs, postJob, updateJob } from '../controllers/job.controllres.js';
+import { deleteJob, getAllJob, getMyJobs, getSingleJob, postJob, updateJob } from '../controllers/job.controllres.js';
 import {isAuthorized} from '../middlewares/auth.js';
 
 
@@ -10,5 +10,6 @@ jobRouter.route("/postjob").post(isAuthorized,postJob);
 jobRouter.route("/myjobs").get(isAuthorized,getMyJobs);
 jobRouter.route("/updatejob/:id").put(isAuthorized,updateJob);
 jobRouter.route("/deletejob/:id").delete(isAuthorized,deleteJob);
+jobRouter.route("/:id").get(isAuthorized,getSingleJob);
 
 export  {jobRouter}
